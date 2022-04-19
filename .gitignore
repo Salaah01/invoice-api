@@ -186,6 +186,7 @@ typings/
 # dotenv environment variables file
 *.env
 *.env.test
+!*.example.env
 
 # parcel-bundler cache (https://parceljs.org/)
 
@@ -255,19 +256,12 @@ pip-selfcheck.json
 # End of https://www.gitignore.io/api/node,venv,react,redis,django
 
 *.min.css
+*.min.css.map
 *.min.js
 *.min.js.LICENSE.txt
 *pem
-nginx/prod/certbot/conf/keys*
-nginx/prod/certbot/conf/archive
-nginx/prod/certbot/conf/live
-nginx/prod/certbot/conf/accounts
-cerbox/
-certbox/
-certbot/
 temp_scripts/
 secrets/
-.ssh/
 icons-original.css
 (js|css).LICENSE.txt*
-server_data
+!example.env
