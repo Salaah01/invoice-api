@@ -6,7 +6,13 @@ from datetime import date
 from abc import ABC, abstractmethod
 from .pdf import parser as pdf_parser
 
-SUPPLIER_PARSERS = {"Amazon": pdf_parser, "Amazon Order Summary": pdf_parser}
+SUPPLIER_PARSERS = {
+    "Amazon": {"parser": pdf_parser},
+    "Amazon Order Summary": {
+        "parser": pdf_parser,
+        "class": "AmazonOrderSummary",
+    },
+}
 
 
 class BaseSupplierParser(ABC):
@@ -23,6 +29,9 @@ class BaseSupplierParser(ABC):
         self.parsed_data = self.parse()
         self.parsed_data_str = "\n".join(self.parsed_data)
 
+        # Default values. It is possible that not all of these attributes will
+        # be set by `_summary`. Thefore, to avoid having to handle attributes
+        # that do not exist, we set the default values here.
         self.order_number: str = None
         self.order_date: date = None
         self.subtotal: float = None
@@ -31,9 +40,30 @@ class BaseSupplierParser(ABC):
         self.promotion: float = None
         self.total: float = None
 
+        self.items_breakdown = self._items_breakdown()
+        self._summary()
+
+    def __dict__(self) -> dict:
+        return {
+            "order_number": self.order_number,
+            "order_date": self.order_date,
+            "summary": self.summary(),
+            "items": self.items_breakdown,
+        }
+
+    def summary(self) -> _t.Dict[str, str]:
+        """Returns a summary of the invoice."""
+        return {
+            "subtotal": self.subtotal,
+            "vat": self.vat,
+            "delivery": self.delivery,
+            "promotion": self.promotion,
+            "total": self.total,
+        }
+
     def parse(self) -> _t.List[str]:
         """Parses the data from the supplier."""
-        return SUPPLIER_PARSERS[self.supplier](self.file_path)
+        return SUPPLIER_PARSERS[self.supplier]["parser"](self.file_path)
 
     @abstractmethod
     def _items_breakdown(self) -> _t.Dict[str, _t.Dict[str, str]]:
@@ -86,14 +116,14 @@ class AmazonOrderSummary(BaseSupplierParser):
                 if current_search > search_limit:
                     raise ValueError(f"Could not find price for {data}")
 
-                product_name += data + " "
+                product_name += re.sub(r'( Sold by:.*| *Condition: New)', '', data) + " "
                 i += 1
                 data = self.parsed_data[i]
             else:
                 # Skip the first element as it contains the currency.
                 price_inc_vat = data[1:]
 
-            items[product_name] = {
+            items[product_name.strip()] = {
                 "price_inc_vat": price_inc_vat,
                 "quantity": quantity,
             }
