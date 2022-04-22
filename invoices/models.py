@@ -18,11 +18,11 @@ def invoice_upload_path(instance: "Invoice", filename: str) -> str:
     """
     fname, ext = os.path.splitext(filename.lower())
     fname = slugify(fname)
-    date_str = instance.date.strftime("%Y-%m-%d")
+    date_str = instance.date_ordered.strftime("%Y-%m-%d")
 
-    upload_path = f"{instance.supplier.slug}/{date_str}"
-    if instance.invoice_number:
-        upload_path += f"/{slugify(instance.invoice_number)}-"
+    upload_path = f"{instance.supplier.slug}/{date_str}/"
+    if instance.order_number:
+        upload_path += f"{slugify(instance.order_number)}-"
     upload_path += f"{fname}{ext}"
 
     return upload_path
@@ -33,7 +33,12 @@ class Invoice(models.Model):
 
     date_ordered = models.DateField()
     date_added = models.DateTimeField(auto_now_add=True)
-    order_number = models.CharField(max_length=32, blank=True, null=True)
+    order_number = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        verbose_name="Order/Invoice Number",
+    )
     supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT)
     subtotal = models.DecimalField(max_digits=7, decimal_places=2)
     vat = models.DecimalField(max_digits=7, decimal_places=2)
