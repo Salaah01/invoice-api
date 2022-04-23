@@ -108,7 +108,7 @@ class AmazonOrderSummary(BaseSupplierParser):
         items = {}
         for i in range(len(self.invoice_data)):
             data = self.invoice_data[i]
-            if data != "Items Ordered Price":
+            if not data.startswith("Items Ordered"):
                 continue
 
             # The product name starts here. The first element will also have
