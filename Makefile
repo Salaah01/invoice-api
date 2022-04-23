@@ -9,3 +9,6 @@ endef
 
 update-readme-cov:
 	$(update_readme_cov)
+
+update-python-pkgs:
+	pip-compile requirements.in
