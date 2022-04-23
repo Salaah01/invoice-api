@@ -16,6 +16,10 @@ SUPPLIER_PARSERS = {
         "parser": pdf_parser,
         "class": "SoakRochford",
     },
+    "Tiny Box Company": {
+        "parser": pdf_parser,
+        "class": "TinyBoxCompany",
+    },
 }
 
 
@@ -104,7 +108,7 @@ class BaseSupplierParser(ABC):
 class AmazonOrderSummary(BaseSupplierParser):
     """Parses the data from an Amazon Order Summary PDF."""
 
-    def _items_breakdown(self) -> _t.Dict[str, _t.Dict[str, str]]:
+    def _items_breakdown(self):
         items = {}
         for i in range(len(self.invoice_data)):
             data = self.invoice_data[i]
@@ -124,7 +128,7 @@ class AmazonOrderSummary(BaseSupplierParser):
             product_name = ""
             search_limit = 100
             current_search = 0
-            while not re.search(r"\d{2}\.\d{2}", data):
+            while not re.search(r"\d{1,}\.\d{2}", data):
                 if current_search > search_limit:
                     raise ValueError(f"Could not find price for {data}")
                 else:
@@ -251,3 +255,51 @@ class SoakRochford(BaseSupplierParser):
             int(date_parts[1]),
             int(date_parts[0]),
         )
+
+
+class TinyBoxCompany(BaseSupplierParser):
+    """Parses the data from an Tiny Box Company PDF invoice."""
+
+    def _items_breakdown(self):
+        items = {}
+        for i in range(len(self.invoice_data)):
+            data = self.invoice_data[i]
+            if data == "PRODUCT NAME SKU PRICE QTY SUBTOTAL":
+                continue
+
+            # Reached the end of the items.
+            if re.search(r"Subtotal £\d{1,}\.{2}", data):
+                break
+
+            # The product name starts from the next element.
+            i += 1
+            data = self.invoice_data[i]
+            product_name = ""
+            while not re.search(r"\d{1,}\.\d{2} Ordered:", data):
+                product_name += data + " "
+                i += 1
+                print(data)
+                data = self.invoice_data[i]
+            else:
+                print('\033[91m=================\033[0m')
+                ordered = re.search(
+                    r"(\d{1,}\.\d{2}) Ordered:", data
+                ).groups()[0]
+                i += 1
+                data = self.invoice_data[i]
+
+            # Next, we need find the price.
+            while not re.search(r"^£\d{1,}\.\d{2}$", data):
+                i += 1
+                data = self.invoice_data[i]
+            else:
+                price = re.search(r"£(\d{1,}\.\d{2})", data).groups()[0]
+            items[product_name] = {"price_ex_vat": price, "quantity": ordered}
+
+        return items
+
+    def _summary(self):
+        pass
+
+    def _metadata(self):
+        pass
