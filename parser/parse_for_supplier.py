@@ -2,7 +2,7 @@
 
 import typing as _t
 import re
-from datetime import date
+from datetime import date, datetime
 from abc import ABC, abstractmethod
 from .pdf import parser as pdf_parser
 
@@ -262,13 +262,15 @@ class TinyBoxCompany(BaseSupplierParser):
 
     def _items_breakdown(self):
         items = {}
-        for i in range(len(self.invoice_data)):
+        i = 0
+        while i < len(self.invoice_data):
             data = self.invoice_data[i]
-            if data == "PRODUCT NAME SKU PRICE QTY SUBTOTAL":
+            if data != "PRODUCT NAME SKU PRICE QTY SUBTOTAL":
+                i += 1
                 continue
 
             # Reached the end of the items.
-            if re.search(r"Subtotal £\d{1,}\.{2}", data):
+            if re.search(r"Subtotal £\d{1,}\.\d{2}", data):
                 break
 
             # The product name starts from the next element.
@@ -278,13 +280,11 @@ class TinyBoxCompany(BaseSupplierParser):
             while not re.search(r"\d{1,}\.\d{2} Ordered:", data):
                 product_name += data + " "
                 i += 1
-                print(data)
                 data = self.invoice_data[i]
             else:
-                print('\033[91m=================\033[0m')
-                ordered = re.search(
-                    r"(\d{1,}\.\d{2}) Ordered:", data
-                ).groups()[0]
+                # In this case, the element is similar to:
+                # "£0.21 Ordered: 200".
+                ordered = re.search(r"Ordered: (\d{1,})", data).groups()[0]
                 i += 1
                 data = self.invoice_data[i]
 
@@ -294,12 +294,42 @@ class TinyBoxCompany(BaseSupplierParser):
                 data = self.invoice_data[i]
             else:
                 price = re.search(r"£(\d{1,}\.\d{2})", data).groups()[0]
+                i += 1
             items[product_name] = {"price_ex_vat": price, "quantity": ordered}
-
         return items
 
     def _summary(self):
-        pass
+        re_patterns = {
+            "subtotal": r"Subtotal £(\d{1,}\.\d{2})",
+            "delivery": r"Shipping& Handling £(\d{1,}\.\d{2})",
+            "vat": r"VAT £(\d{1,}\.\d{2})",
+            "total": r"GRANDTOTAL £(\d{1,}\.\d{2})",
+        }
+
+        for field, re_pattern in re_patterns.items():
+            match = re.search(re_pattern, self.invoice_data_str)
+            if match:
+                setattr(self, field, match.groups()[0])
 
     def _metadata(self):
-        pass
+        self.order_number = self._order_number()
+        self.order_date = self._order_date()
+
+    def _order_number(self) -> _t.Optional[str]:
+        """Locates the order number."""
+        order_number = re.search(r"ORDER#(.*?) ", self.invoice_data_str)
+        if order_number:
+            return order_number.groups()[0]
+
+    def _order_date(self) -> _t.Optional[date]:
+        """Locates the order date. The order date will be in the format
+        "DD MMMM YYYY".
+        """
+        order_date = re.search(
+            r"\n(\d{1,} (.*?) \d{4})\n",
+            self.invoice_data_str,
+        )
+        if not order_date:
+            return
+        
+        return datetime.strptime(order_date.groups()[0], "%d %B %Y").date()
