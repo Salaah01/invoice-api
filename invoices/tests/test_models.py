@@ -56,6 +56,29 @@ class TestInvoice(TestCase):
             str,
         )
 
+    def test_is_complete_false(self):
+        """Test the `is_complete` method returns false when the invoice is not
+        yet complete.
+        """
+        invoice = mommy.make(invoice_models.Invoice, date_added=None)
+        self.assertFalse(invoice.is_complete)
+
+    def test_is_complete_true(self):
+        """Test the `is_complete` method returns true when the invoice is
+        complete.
+        """
+        invoice = mommy.make(
+            invoice_models.Invoice,
+            date_added=date.today(),
+            order_number="abc",
+            subtotal=10,
+            vat=5,
+            delivery=5,
+            promotion=5,
+            total=15,
+        )
+        self.assertTrue(invoice.is_complete)
+
 
 class TestInvoiceItem(TestCase):
     """Test the `InvoiceItem` model."""

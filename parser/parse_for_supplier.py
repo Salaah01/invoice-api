@@ -22,7 +22,6 @@ SUPPLIER_PARSERS = {
     },
 }
 
-
 class BaseSupplierParser(ABC):
     """An abstract base class for parsing data from a supplier."""
 

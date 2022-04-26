@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "tasks": [
+  ],
+  "configurations": [
+    {
+      "name": "Python: Django",
+      "type": "python",
+      "request": "launch",
+      "python": "${workspaceFolder}/venv/bin/python3",
+      "program": "${workspaceFolder}/manage.py",
+      "args": [
+        "runserver",
+      ],
+      "debugOptions": [
+        "WaitOnAbnormalExit",
+        "WaitOnNormalExit",
+        "RedirectOutput",
+        "DjangoDebugging"
+      ],
+      "django": true,
+      "envFile": "${workspaceFolder}/.env"
+    },
+  ]
+}

@@ -18,7 +18,9 @@ def invoice_upload_path(instance: "Invoice", filename: str) -> str:
     """
     fname, ext = os.path.splitext(filename.lower())
     fname = slugify(fname)
-    date_str = instance.date_ordered.strftime("%Y-%m-%d")
+    date_str = (instance.date_ordered or instance.date_added).strftime(
+        "%Y-%m-%d"
+    )
 
     upload_path = f"{instance.supplier.slug}/{date_str}/"
     if instance.order_number:
@@ -31,7 +33,7 @@ def invoice_upload_path(instance: "Invoice", filename: str) -> str:
 class Invoice(models.Model):
     """Represents an invoice item. Contains details on an invoice."""
 
-    date_ordered = models.DateField()
+    date_ordered = models.DateField(blank=True, null=True)
     date_added = models.DateTimeField(auto_now_add=True)
     order_number = models.CharField(
         max_length=32,
@@ -40,11 +42,36 @@ class Invoice(models.Model):
         verbose_name="Order/Invoice Number",
     )
     supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT)
-    subtotal = models.DecimalField(max_digits=7, decimal_places=2)
-    vat = models.DecimalField(max_digits=7, decimal_places=2)
-    delivery = models.DecimalField(max_digits=7, decimal_places=2)
-    promotion = models.DecimalField(max_digits=7, decimal_places=2)
-    total = models.DecimalField(max_digits=7, decimal_places=2)
+    subtotal = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    vat = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    delivery = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    promotion = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    total = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
     attachment = models.FileField(
         upload_to=invoice_upload_path,
         blank=True,
@@ -60,9 +87,30 @@ class Invoice(models.Model):
 
     def clean(self):
         """Ensure that the promotion value is negative."""
-        if self.promotion > 0:
+        if (self.promotion or 0) > 0:
             self.promotion = -self.promotion
         super().clean()
+
+    @property
+    def is_complete(self) -> bool:
+        """Returns True if the invoice is complete.
+
+        :return: True if the invoice is complete.
+        :rtype: bool
+        """
+        for field in (
+            self.date_added,
+            self.order_number,
+            self.subtotal,
+            self.vat,
+            self.delivery,
+            self.promotion,
+            self.total,
+        ):
+            if field is None:
+                return False
+        else:
+            return True
 
 
 class InvoiceItem(models.Model):

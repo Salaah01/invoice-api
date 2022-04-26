@@ -8,3 +8,18 @@ class SupplierAdmin(admin.ModelAdmin):
     search_fields = ["id", "name", "slug", "website"]
     ordering = ["name"]
     prepopulated_fields = {"slug": ["name"]}
+
+
+@admin.register(supplier_models.UserSupplier)
+class UserSupplierAdmin(admin.ModelAdmin):
+    list_display = ["id", "user", "supplier"]
+    search_fields = [
+        "id",
+        "user__username",
+        "user__email",
+        "supplier__name",
+        "supplier__website",
+    ]
+    ordering = ["user", "supplier"]
+    raw_id_fields = ["user", "supplier"]
+    list_filter = ["supplier"]
