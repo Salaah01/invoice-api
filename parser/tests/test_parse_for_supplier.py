@@ -1,8 +1,17 @@
 """Unittests for the `parse_for_supplier` module."""
 
-from datetime import date
 import unittest
+from unittest.mock import patch
+import os
+from datetime import date
 from .. import parse_for_supplier
+
+
+TEST_INVOICES_DIR = os.path.join(
+    "parser",
+    "tests",
+    "invoices",
+)
 
 
 class DummySupplier(parse_for_supplier.BaseSupplierParser):
@@ -133,3 +142,72 @@ class TestBaseSupplierParser(unittest.TestCase):
             parser.read_invoice(),
             ["Page 1", "paragraph 1", "page 2", "paragraph 2"],
         )
+
+    def test_invalid_supplier(self):
+        """Test the class raises a `ValueError` where the supplier is not
+        supplied.
+        """
+        with self.assertRaises(ValueError):
+            DummySupplier(False, "parser/tests/test_pdf.pdf", "Invalid")
+
+    def test_metadata(self):
+        """Test that the `_metadata` method returns a default dictionary when
+        not overridden.
+        """
+        self.assertEqual(
+            parse_for_supplier.BaseSupplierParser._metadata(None),
+            {},
+        )
+
+
+class TestSoakRochford(unittest.TestCase):
+    """Tests for the `SoakRochford` class."""
+
+    @staticmethod
+    def parser_instance(filepath: str) -> parse_for_supplier.SoakRochford:
+        """Return a parser instance for the given filepath and supplier.
+
+        :param filepath: The filepath of the invoice
+        :type filename: str
+        :param supplier: The supplier of the invoice
+        :type supplier: str
+        :return: The parser instance
+        :rtype: SoakRochford
+        """
+        return parse_for_supplier.SoakRochford(
+            os.path.join(TEST_INVOICES_DIR, "soak_rochford", filepath),
+            "Soak Rochford",
+        )
+
+    def setUp(self):
+        """Set up the unittest."""
+        self.parser = self.parser_instance("std_invoice.pdf")
+
+    def test_items_breakdown(self):
+        """Test the `_items_breakdown` method."""
+        items_breakdown = self.parser._items_breakdown()
+        self.assertEqual(len(items_breakdown.keys()), 28)
+
+    @patch("parser.parse_for_supplier.ITERATION_LIMIT", 2)
+    def test_items_breakdown_reaches_search_limit(self):
+        """Test that the `_items_breakdown` method raises a `StopIteration`
+        error when the search limit is reached.
+        """
+        with self.assertRaises(StopIteration):
+            self.parser._items_breakdown()
+
+    def test_order_date(self):
+        """Test the `_order_date` method. It is expected to return the order
+        date.
+        """
+        self.assertEqual(
+            self.parser._order_date(),
+            date(2022, 1, 2),
+        )
+
+    def test_no_order_date(self):
+        """Test the `_order_date` method returns `None` when an order date
+        cannot be found.
+        """
+        parser = self.parser_instance("no_order_date.pdf")
+        self.assertIsNone(parser._order_date())

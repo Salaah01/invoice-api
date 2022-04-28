@@ -22,6 +22,8 @@ SUPPLIER_PARSERS = {
     },
 }
 
+ITERATION_LIMIT = 100
+
 
 def parse(filepath: str, supplier: str) -> "BaseSupplierParser":
     """Parse the data from a supplier's invoice.
@@ -33,7 +35,7 @@ def parse(filepath: str, supplier: str) -> "BaseSupplierParser":
     :return: An instance of the supplier's parser.
     :rtype: BaseSupplierParser
     """
-    
+
     parser_class = SUPPLIER_PARSERS[supplier]["class"]
     return globals()[parser_class](filepath, supplier)
 
@@ -141,11 +143,13 @@ class AmazonOrderSummary(BaseSupplierParser):
             # The product name may span multiple items. Keep searching until
             # we find the end of the product name.
             product_name = ""
-            search_limit = 100
             current_search = 0
             while not re.search(r"\d{1,}\.\d{2}", data):
-                if current_search > search_limit:
-                    raise ValueError(f"Could not find price for {data}")
+                if current_search > ITERATION_LIMIT:
+                    raise StopIteration(
+                        "Something went wrong. Could not systematically find "
+                        "the end of the file."
+                    )
                 else:
                     current_search += 1
                 product_name += (
@@ -197,11 +201,13 @@ class SoakRochford(BaseSupplierParser):
             #   Price: £2.50
             i += 1
             data = self.invoice_data[i]
-            search_limit = 100
             current_search = 0
             while not data.startswith("Subtotal"):
-                if current_search > search_limit:
-                    raise ValueError(f"Could not find price for {data}")
+                if current_search > ITERATION_LIMIT:
+                    raise StopIteration(
+                        "Something went wrong. Could not systematically find "
+                        "the end of the file."
+                    )
                 else:
                     current_search += 1
 
