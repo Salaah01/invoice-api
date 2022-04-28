@@ -22,12 +22,27 @@ SUPPLIER_PARSERS = {
     },
 }
 
+
+def parse(filepath: str, supplier: str) -> "BaseSupplierParser":
+    """Parse the data from a supplier's invoice.
+
+    :param filepath: The path to the invoice file.
+    :type filepath: str
+    :param supplier: The name of the supplier.
+    :type supplier: str
+    :return: An instance of the supplier's parser.
+    :rtype: BaseSupplierParser
+    """
+    parser_class = SUPPLIER_PARSERS[supplier]["class"]
+    return globals()[parser_class](filepath, supplier)
+
+
 class BaseSupplierParser(ABC):
     """An abstract base class for parsing data from a supplier."""
 
-    def __init__(self, file_path: str, supplier: str):
+    def __init__(self, filepath: str, supplier: str):
         """Initializes a new instance of the SupplierParser class."""
-        self.file_path = file_path
+        self.filepath = filepath
         self.supplier = supplier
 
         # Default values. It is possible that not all of these attributes will
@@ -49,7 +64,7 @@ class BaseSupplierParser(ABC):
         if self.order_date:
             return f"{self.order_date} - {self.supplier}"
         else:
-            return f"{self.supplier} - {self.file_path}"
+            return f"{self.supplier} - {self.filepath}"
 
     def __dict__(self) -> dict:
         return {
@@ -78,7 +93,7 @@ class BaseSupplierParser(ABC):
         """Parses the data from the supplier."""
         if self.supplier not in SUPPLIER_PARSERS:
             raise ValueError(f"Supplier {self.supplier} is not supported.")
-        return SUPPLIER_PARSERS[self.supplier]["parser"](self.file_path)
+        return SUPPLIER_PARSERS[self.supplier]["parser"](self.filepath)
 
     @abstractmethod
     def _items_breakdown(self) -> _t.Dict[str, _t.Dict[str, str]]:
@@ -330,5 +345,5 @@ class TinyBoxCompany(BaseSupplierParser):
         )
         if not order_date:
             return
-        
+
         return datetime.strptime(order_date.groups()[0], "%d %B %Y").date()

@@ -15,10 +15,10 @@ class InvoiceAdminTest(TestCase):
             username="test_user",
         )
 
-    def test_is_complete(self):
-        """Test the `is_complete` method."""
-        invoice = mommy.make(invoice_models.Invoice)
-        self.assertEqual(
-            invoice_admin.InvoiceAdmin.is_complete(None, invoice),
-            invoice.is_complete,
-        )
+    # def test_is_complete(self):
+    #     """Test the `is_complete` method."""
+    #     invoice = mommy.make(invoice_models.Invoice)
+    #     self.assertEqual(
+    #         invoice_admin.InvoiceAdmin.is_complete(None, invoice),
+    #         invoice.is_complete,
+    #     )

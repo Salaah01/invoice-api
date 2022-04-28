@@ -1,3 +1,5 @@
+"""Utility functions for dates."""
+
 import typing as _t
 from datetime import datetime, date
 from django.conf import settings

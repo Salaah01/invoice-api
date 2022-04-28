@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.views import View
 from django.http import HttpRequest, HttpResponse
 from . import forms
@@ -22,4 +23,6 @@ class InvoiceUpload(View):
             form.save()
             return HttpResponse("OK")
         else:
-            return render(request, "invoices/upload_new.html", {"form": form})
+            messages.error(request, form.errors)
+            print(form.errors)
+            return redirect("invoices:upload_new")

@@ -1,6 +1,7 @@
 import os
 from django.db import models
 from django.utils.text import slugify
+from core import number_utils
 from suppliers.models import Supplier
 from products.models import Product
 
@@ -33,6 +34,7 @@ def invoice_upload_path(instance: "Invoice", filename: str) -> str:
 class Invoice(models.Model):
     """Represents an invoice item. Contains details on an invoice."""
 
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
     date_ordered = models.DateField(blank=True, null=True)
     date_added = models.DateTimeField(auto_now_add=True)
     order_number = models.CharField(
@@ -77,6 +79,7 @@ class Invoice(models.Model):
         blank=True,
         null=True,
     )
+    completed = models.BooleanField(default=False)
 
     class Meta:
         db_table = "invoice"
@@ -91,27 +94,6 @@ class Invoice(models.Model):
             self.promotion = -self.promotion
         super().clean()
 
-    @property
-    def is_complete(self) -> bool:
-        """Returns True if the invoice is complete.
-
-        :return: True if the invoice is complete.
-        :rtype: bool
-        """
-        for field in (
-            self.date_added,
-            self.order_number,
-            self.subtotal,
-            self.vat,
-            self.delivery,
-            self.promotion,
-            self.total,
-        ):
-            if field is None:
-                return False
-        else:
-            return True
-
 
 class InvoiceItem(models.Model):
     """Represents a single item on an invoice."""
@@ -124,3 +106,8 @@ class InvoiceItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     price_ex_vat = models.DecimalField(max_digits=7, decimal_places=2)
+
+    @property
+    def unit_price(self) -> float:
+        """Returns the unit price of the invoice item."""
+        return number_utils.float_to_dp(self.price_ex_vat / self.quantity)

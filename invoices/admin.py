@@ -21,7 +21,7 @@ class InvoiceAdmin(admin.ModelAdmin):
         "promotion",
         "total",
         "attachment",
-        "is_complete",
+        "completed",
     ]
     search_fields = [
         "id",
@@ -36,9 +36,3 @@ class InvoiceAdmin(admin.ModelAdmin):
     ordering = ["-date_ordered"]
     date_hierarchy = "date_ordered"
     inlines = [InvoiceItemInline]
-
-    def is_complete(self, obj: invoice_models.Invoice) -> bool:
-        """Returns True if the invoice is complete."""
-        return obj.is_complete
-
-    is_complete.boolean = True
