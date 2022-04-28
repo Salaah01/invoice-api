@@ -24,5 +24,4 @@ class InvoiceUpload(View):
             return HttpResponse("OK")
         else:
             messages.error(request, form.errors)
-            print(form.errors)
             return redirect("invoices:upload_new")

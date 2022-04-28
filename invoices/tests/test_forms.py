@@ -1,61 +1,10 @@
-from types import SimpleNamespace
-from collections import namedtuple
+import os
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from model_mommy import mommy
 from suppliers import models as supplier_models
 from .. import forms as invoice_forms
-
-
-mocked_parsed_data = SimpleNamespace(
-    parse=lambda _1, _2: None,
-    process_invoice=lambda: None,
-    order_date="2020-01-01",
-    order_number="12345",
-    subtotal=0,
-    vat=0,
-    delivery=0,
-    promotion=0,
-    total=0,
-)
-
-_mocked_parser = {
-    "parse": lambda _1, _2: None,
-    "process_invoice": lambda: None,
-    "order_date": "2020-01-01",
-    "order_number": "12345",
-    "subtotal": 0,
-    "vat": 0,
-    "delivery": 0,
-    "promotion": 0,
-    "total": 0,
-}
-mocked_parser = namedtuple("mocked_parser", _mocked_parser.keys())(
-    **_mocked_parser
-)
-
-
-class MockedParser:
-    order_date = "2020-01-01"
-    order_number = "12345"
-    subtotal = 0
-    vat = 0
-    delivery = 0
-    promotion = 0
-    total = 0
-
-    def __init__(self, *args, **kwargs):
-        return None
-
-    def parse(self, *args, **kwargs) -> None:
-        return None
-
-    def process_invoice(self) -> None:
-        return None
-
-
-mocked_parser = MockedParser()
 
 
 class InvoiceUploadFormTest(TestCase):
@@ -91,8 +40,10 @@ class InvoiceUploadFormTest(TestCase):
             ),
         )
 
-    def test_save(self):
-        """Test that the `save` method works."""
+    def test_save_no_invoice(self):
+        """Test that the `save` method works. In this test, an actual invoice
+        is not attached to the form.
+        """
         file = SimpleUploadedFile(
             "test.pdf",
             b"file_content",
@@ -110,3 +61,29 @@ class InvoiceUploadFormTest(TestCase):
         invoice = form.save()
         self.assertEqual(invoice.supplier, self.supplier)
         self.assertEqual(invoice.user, self.user)
+
+    def test_save_with_invoice(self):
+        """Test that the `save` method works. In this test, an actual invoice
+        is used, so it is expected that the invoice is parsed.
+        """
+        invoice_fp = os.path.join(
+            "invoices",
+            "tests",
+            "soak_rochford_invoice.pdf",
+        )
+        file = SimpleUploadedFile(
+            "test.pdf",
+            open(invoice_fp, "rb").read(),
+        )
+        form = invoice_forms.InvoiceUpload(
+            user=self.user,
+            data={
+                "supplier": self.supplier.id,
+                "attachment": file,
+            },
+            files={"attachment": file},
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        invoice = form.save()
+        self.assertEqual(invoice.supplier, self.supplier)

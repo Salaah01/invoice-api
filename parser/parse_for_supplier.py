@@ -33,6 +33,7 @@ def parse(filepath: str, supplier: str) -> "BaseSupplierParser":
     :return: An instance of the supplier's parser.
     :rtype: BaseSupplierParser
     """
+    
     parser_class = SUPPLIER_PARSERS[supplier]["class"]
     return globals()[parser_class](filepath, supplier)
 
@@ -214,6 +215,21 @@ class SoakRochford(BaseSupplierParser):
                     r"([\d -]{1,} (.*?(\d{1,})) ($|£)\d{1,}\.\d{2} .*?(\d{1,}\.\d{2}))",  # noqa: E501
                     data,
                 )
+
+                # This will be true where we have the following patterns:
+                # ```
+                # [
+                #    '07-',
+                #    '0501 Pourer Spout Tops with Dust Caps 10 £0.25 £2.50'
+                # ]
+                # ```
+                # In this case, we are focusing on `'07-'` and we should move
+                # on.
+                if data_groups is None:
+                    i += 1
+                    data = self.invoice_data[i]
+                    continue
+
                 quantity = data_groups.groups()[2]
                 product = data_groups.groups()[1].rstrip(quantity).strip()
 
