@@ -307,7 +307,7 @@ class TinyBoxCompany(BaseSupplierParser):
 
             # Reached the end of the items.
             if re.search(r"Subtotal £\d{1,}\.\d{2}", data):
-                break
+                break  # pragma: no cover
 
             # The product name starts from the next element.
             i += 1
@@ -337,7 +337,7 @@ class TinyBoxCompany(BaseSupplierParser):
     def _summary(self):
         re_patterns = {
             "subtotal": r"Subtotal £(\d{1,}\.\d{2})",
-            "delivery": r"Shipping& Handling £(\d{1,}\.\d{2})",
+            "delivery": r"Shipping.*?Handling £(\d{1,}\.\d{2})",
             "vat": r"VAT £(\d{1,}\.\d{2})",
             "total": r"GRANDTOTAL £(\d{1,}\.\d{2})",
         }
@@ -345,7 +345,7 @@ class TinyBoxCompany(BaseSupplierParser):
         for field, re_pattern in re_patterns.items():
             match = re.search(re_pattern, self.invoice_data_str)
             if match:
-                setattr(self, field, match.groups()[0])
+                setattr(self, field, float(match.groups()[0]))
 
     def _metadata(self):
         self.order_number = self._order_number()
@@ -353,19 +353,22 @@ class TinyBoxCompany(BaseSupplierParser):
 
     def _order_number(self) -> _t.Optional[str]:
         """Locates the order number."""
-        order_number = re.search(r"ORDER#(.*?) ", self.invoice_data_str)
+        order_number = re.search(r"ORDER ?#(.*) ", self.invoice_data_str)
         if order_number:
-            return order_number.groups()[0]
+            return order_number.groups()[0].strip()
 
     def _order_date(self) -> _t.Optional[date]:
         """Locates the order date. The order date will be in the format
         "DD MMMM YYYY".
         """
         order_date = re.search(
-            r"\n(\d{1,} (.*?) \d{4})\n",
+            r"\n(\d{1,} (\w{1,}) \d{4})\n",
             self.invoice_data_str,
         )
         if not order_date:
             return
 
-        return datetime.strptime(order_date.groups()[0], "%d %B %Y").date()
+        try:
+            return datetime.strptime(order_date.groups()[0], "%d %B %Y").date()
+        except ValueError:
+            return None

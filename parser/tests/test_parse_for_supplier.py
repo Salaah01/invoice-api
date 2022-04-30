@@ -211,3 +211,84 @@ class TestSoakRochford(unittest.TestCase):
         """
         parser = self.parser_instance("no_order_date.pdf")
         self.assertIsNone(parser._order_date())
+
+
+class TestTinyBoxCompany(unittest.TestCase):
+    """Tests for the `TinyBoxCompany` class."""
+
+    @staticmethod
+    def parser_instance(filepath: str) -> parse_for_supplier.TinyBoxCompany:
+        """Return a parser instance for the given filepath and supplier.
+
+        :param filepath: The filepath of the invoice
+        :type filename: str
+        :param supplier: The supplier of the invoice
+        :type supplier: str
+        :return: The parser instance
+        :rtype: TinyBoxCompany
+        """
+        return parse_for_supplier.TinyBoxCompany(
+            os.path.join(TEST_INVOICES_DIR, "tiny_box_company", filepath),
+            "Tiny Box Company",
+        )
+
+    def setUp(self):
+        """Set up the unittest."""
+        self.parser = self.parser_instance("std_invoice.pdf")
+
+    def test_items_breakdown(self):
+        """Test the `_items_breakdown` method."""
+        self.assertEqual(
+            self.parser._items_breakdown(),
+            {
+                "White FlatPack Soap Gift Box ": {
+                    "price_ex_vat": "42.00",
+                    "quantity": "200",
+                }
+            },
+        )
+
+    def test_summary(self):
+        """Test the `_summary` method."""
+        self.parser._summary()
+        self.assertEqual(self.parser.subtotal, 42.00)
+        self.assertEqual(self.parser.delivery, 4.99)
+        self.assertEqual(self.parser.vat, 9.40)
+        self.assertIsNone(self.parser.promotion)
+        self.assertEqual(self.parser.total, 56.39)
+
+    def test_order_number(self):
+        """Test the `_order_number` method."""
+        self.assertEqual(
+            self.parser._order_number(),
+            "123456",
+        )
+
+    def test_order_date(self):
+        """Test the `_order_date` method."""
+        self.assertEqual(
+            self.parser._order_date(),
+            date(2021, 10, 22),
+        )
+
+    def test_no_order_date(self):
+        """Test that the `_order_date` method returns `None` when the order
+        date cannot be found.
+        """
+        parser = self.parser_instance("no_order_date.pdf")
+        self.assertIsNone(parser._order_date())
+
+    def test_bad_date(self):
+        """Test that the `_order_date` method returns `None` when the order
+        date cannot be parsed.
+        """
+        parser = self.parser_instance("bad_date.pdf")
+        self.assertIsNone(parser._order_date())
+
+    def test_metadata(self):
+        """Test that the `_metadata` method. It should set the value for
+        the order date and order number.
+        """
+        self.parser._metadata()
+        self.assertEqual(self.parser.order_number, "123456")
+        self.assertEqual(self.parser.order_date, date(2021, 10, 22))

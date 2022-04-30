@@ -13,14 +13,14 @@ percent=${cov%?}
 # Set the colour
 if [ $percent -lt 50 ]; then
   colour='red';
-elif [ $percent -lt 90 ]; then
+elif [ $percent -lt 90 ]; then  
   colour='yellow';
 else
   colour='green';
 fi
 
 # Build the shield link
-shield="![coverage: $cov%](https://img.shields.io/badge/coverage-$percent%25-$colour.svg)"
+shield="![coverage: $cov](https://img.shields.io/badge/coverage-$percent%25-$colour.svg)"
 
 
 
