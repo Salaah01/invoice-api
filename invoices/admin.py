@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.http import HttpRequest
+from core.admin import PermModelAdmin
 from . import models as invoice_models
 
 
@@ -8,7 +10,7 @@ class InvoiceItemInline(admin.TabularInline):
 
 
 @admin.register(invoice_models.Invoice)
-class InvoiceAdmin(admin.ModelAdmin):
+class InvoiceAdmin(PermModelAdmin):
     list_display = [
         "id",
         "date_ordered",
