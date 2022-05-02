@@ -1,9 +1,11 @@
+import typing as _t
 import os
 from django.db import models
 from django.utils.text import slugify
 from core import number_utils
 from suppliers.models import Supplier
 from products.models import Product, ProductCategory
+from parser.parse_for_supplier import BaseSupplierParser
 
 
 def invoice_upload_path(instance: "Invoice", filename: str) -> str:
@@ -94,6 +96,81 @@ class Invoice(models.Model):
             self.promotion = -self.promotion
         super().clean()
 
+    def update_parsed_data(self, parser: BaseSupplierParser):
+        """Updates the invoice item with the parsed data from the parser.
+
+        :param parser: The parser to use to parse the invoice item.
+        :type parser: BaseSupplierParser
+        """
+        self.date_ordered = parser.order_date
+        self.order_number = parser.order_number
+        self.subtotal = parser.subtotal or 0
+        self.vat = parser.vat or 0
+        self.delivery = parser.delivery or 0
+        self.promotion = parser.promotion or 0
+        self.total = parser.total or 0
+
+        self.save()
+
+    def add_from_items_breakdown(self, items_breakdown: dict):
+        """Adds invoice items from a dictionary of items.
+
+        :param items_breakdown: The dictionary of items to add to the invoice.
+        :type items_breakdown: dict
+        """
+        invoice_items = []
+        for product_name, product_details in items_breakdown.items():
+            invoice_items.append(
+                self.add_item(
+                    product_details.get("quantity"),
+                    product_details.get("price"),
+                    product_name=product_name,
+                )
+            )
+        return invoice_items
+
+    def add_item(
+        self,
+        quantity: int,
+        price: float,
+        product: _t.Optional[Product] = None,
+        product_name: _t.Optional[str] = None,
+    ) -> "InvoiceItem":
+        """Adds an invoice item.
+
+        :param quantity: The quantity of the item.
+        :type quantity: int
+        :param price: The price of the item.
+        :type price: float
+        :param product: The product to add to the invoice.
+        :type product: Product
+        :param product_name: The name of the product to add to the invoice.
+        :type product_name: str
+        :return: The invoice item that was added.
+        :rtype: InvoiceItem
+        """
+
+        if product is None and product_name is None:
+            raise ValueError(
+                "Either product or product_name must be provided."
+            )
+
+        if product is None:
+            product, _ = Product.objects.get_or_create(
+                name=product_name,
+                supplier=self.supplier,
+            )
+
+        invoice_item = InvoiceItem.objects.create(
+            invoice=self,
+            product=product,
+            quantity=quantity,
+            price_ex_vat=price,
+            category=product.default_category,
+        )
+        invoice_item.save()
+        return invoice_item
+
 
 class InvoiceItem(models.Model):
     """Represents a single item on an invoice."""
@@ -104,8 +181,13 @@ class InvoiceItem(models.Model):
         related_name="products",
     )
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField()
-    price_ex_vat = models.DecimalField(max_digits=7, decimal_places=2)
+    quantity = models.PositiveIntegerField(blank=True, null=True)
+    price_ex_vat = models.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
     category = models.ForeignKey(
         ProductCategory,
         on_delete=models.SET_NULL,

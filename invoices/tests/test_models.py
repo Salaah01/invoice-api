@@ -1,6 +1,7 @@
 from datetime import date
 from django.test import TestCase
 from model_mommy import mommy
+from products import models as product_models
 from .. import models as invoice_models
 
 
@@ -57,7 +58,7 @@ class TestInvoice(TestCase):
         )
 
     def test_clean_promotion(self):
-        """Test that thw `clean` method cleans the promotion value."""
+        """Test that the `clean` method cleans the promotion value."""
         invoice = mommy.make(
             invoice_models.Invoice,
             subtotal=100,
@@ -77,6 +78,37 @@ class TestInvoice(TestCase):
         )
         invoice.clean()
         self.assertEqual(invoice.promotion, -20)
+
+    def test_add_item_product(self):
+        """Test that the `add_item` adds an invoice item correctly when a
+        product is provided.
+        """
+        product = mommy.make(product_models.Product)
+        invoice = mommy.make(invoice_models.Invoice)
+        invoice_item = invoice.add_item(1, 10, product)
+
+        self.assertEqual(invoice_item.product, product)
+        self.assertEqual(invoice_item.quantity, 1)
+        self.assertEqual(invoice_item.price_ex_vat, 10)
+
+    def test_add_item_product_name(self):
+        """Test that the `add_item` adds an invoice item correctly when a
+        product name is provided.
+        """
+        invoice = mommy.make(invoice_models.Invoice)
+        invoice_item = invoice.add_item(1, 10, product_name="Test Product")
+
+        self.assertEqual(invoice_item.product.name, "Test Product")
+        self.assertEqual(invoice_item.quantity, 1)
+        self.assertEqual(invoice_item.price_ex_vat, 10)
+
+    def test_add_item_no_product(self):
+        """Test that the `add_item` raises an error when no product nor
+        product_name is provided.
+        """
+        invoice = mommy.make(invoice_models.Invoice)
+        with self.assertRaises(ValueError):
+            invoice.add_item(1, 10)
 
 
 class TestInvoiceItem(TestCase):

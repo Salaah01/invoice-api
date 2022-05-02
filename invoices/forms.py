@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from suppliers import models as supplier_models
 from parser import parse_for_supplier
+from parser.parse_for_supplier import BaseSupplierParser
 from . import models as invoice_models
 
 
@@ -36,24 +37,32 @@ class InvoiceUpload(forms.ModelForm):
         """Save the invoice and attempt to parse it."""
         # Need to attach user to the invoice before saving.
         invoice = super().save(*args, **kwargs)
+        parsed_data = self.parse_data(invoice)
+        if parsed_data is None:
+            return invoice
 
+        invoice.save()
+        invoice.update_parsed_data(parsed_data)
+        invoice.add_from_items_breakdown(parsed_data.items_breakdown)
+
+        return invoice
+
+    @staticmethod
+    def parse_data(invoice: invoice_models.Invoice) -> BaseSupplierParser:
+        """Parse the invoice data and return the processed object.
+
+        :param invoice: The invoice to parse
+        :type invoice: invoice_models.Invoice
+        :return: A supplier parser object
+        :rtype: BaseSupplierParser
+        """
         try:
             parsed_data = parse_for_supplier.parse(
                 invoice.attachment.file.name,
                 invoice.supplier.name,
             )
             parsed_data.process_invoice()
+            return parsed_data
         except Exception as e:
-            # TODO: Log the error
             print("\033[91mErrors:\n" + str(e) + "\033[0m")
-            return invoice
-
-        invoice.date_ordered = parsed_data.order_date
-        invoice.order_number = parsed_data.order_number
-        invoice.subtotal = parsed_data.subtotal or 0
-        invoice.vat = parsed_data.vat or 0
-        invoice.delivery = parsed_data.delivery or 0
-        invoice.promotion = parsed_data.promotion or 0
-        invoice.total = parsed_data.total or 0
-        invoice.save()
-        return invoice
+            return None

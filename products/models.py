@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.text import slugify
 from suppliers import models as supplier_models
 
 
@@ -10,6 +11,9 @@ class ProductCategory(models.Model):
     class Meta:
         db_table = "product_category"
         ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class Product(models.Model):
@@ -35,3 +39,14 @@ class Product(models.Model):
         db_table = "product"
         ordering = ["name"]
         unique_together = ["slug", "supplier"]
+
+    def __str__(self):
+        if len(self.name) > 50:
+            return f"{self.name[:50]}..."
+        else:
+            return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
