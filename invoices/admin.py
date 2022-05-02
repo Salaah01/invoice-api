@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.http import HttpRequest
 from core.admin import PermModelAdmin
 from . import models as invoice_models
 

@@ -9,7 +9,7 @@ class PermModelAdmin(admin.ModelAdmin):
     """
 
     # The field which holds the user.
-    user_field: str = "user"
+    user_id_field: str = "user_id"
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         """Get the queryset for the model.
@@ -22,4 +22,4 @@ class PermModelAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        return qs.filter(**{self.user_field: request.user})
+        return qs.filter(**{self.user_id_field: request.user.id})

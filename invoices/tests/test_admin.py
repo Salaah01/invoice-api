@@ -1,7 +1,7 @@
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
 from django.contrib.auth.models import User
 from model_mommy import mommy
-from .. import admin as invoice_admin, models as invoice_models
 
 
 class InvoiceAdminTest(TestCase):
@@ -11,14 +11,15 @@ class InvoiceAdminTest(TestCase):
     def setUpTestData(cls):
         """Set up test data."""
         super().setUpTestData()
-        cls.superuser = User.objects.create_superuser(
-            username="test_user",
-        )
+        cls.superuser = User.objects.create_superuser(username="test_user")
+        cls.std_user = mommy.make(User, is_staff=True)
 
-    # def test_is_complete(self):
-    #     """Test the `is_complete` method."""
-    #     invoice = mommy.make(invoice_models.Invoice)
-    #     self.assertEqual(
-    #         invoice_admin.InvoiceAdmin.is_complete(None, invoice),
-    #         invoice.is_complete,
-    #     )
+    def test_changelist_superuser(self):
+        """Test the change list for a superuser. It should return all the
+        results.
+        """
+        client = Client()
+        client.force_login(self.superuser)
+
+        response = client.get(reverse("admin:invoices_invoice_changelist"))
+        self.assertEqual(response.status_code, 200)
