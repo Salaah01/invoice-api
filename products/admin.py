@@ -10,6 +10,6 @@ class ProductCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(product_models.Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "category", "supplier")
-    search_fields = ("id", "name", "category__name", "supplier__name")
-    list_filter = ("category", "supplier")
+    list_display = ("id", "name", "default_category", "supplier")
+    search_fields = ("id", "name", "default_category__name", "supplier__name")
+    list_filter = ("default_category", "supplier")

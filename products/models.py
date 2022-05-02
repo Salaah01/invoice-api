@@ -1,5 +1,5 @@
 from django.db import models
-from suppliers.models import Supplier
+from suppliers import models as supplier_models
 
 
 class ProductCategory(models.Model):
@@ -16,14 +16,22 @@ class Product(models.Model):
     """Represents a product that can be purchased from a supplier."""
 
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
     supplier = models.ForeignKey(
-        Supplier,
+        supplier_models.Supplier,
         on_delete=models.PROTECT,
         related_name="products",
     )
-    category = models.ForeignKey(ProductCategory, on_delete=models.PROTECT)
+    default_category = models.ForeignKey(
+        ProductCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="This value will be set automatically and updated "
+        "periodically.",
+    )
 
     class Meta:
         db_table = "product"
         ordering = ["name"]
-        unique_together = ["name", "supplier"]
+        unique_together = ["slug", "supplier"]

@@ -1,36 +1,40 @@
-"""Migration to create a new group for all standard users."""
+"""Sets the permissions for the standard user group."""
 
 from django.db import migrations
 from django.apps.registry import apps as global_apps
 
 
 def default_group_permissions(apps, schema_editor):
-    """Create a new group."""
+    """Sets the permissions for the standard user group."""
     Group = apps.get_model("auth", "Group")
     group = Group.objects.get(name="Standard Users")
 
     Permission = apps.get_model("auth", "Permission")
     ContentType = apps.get_model("contenttypes", "ContentType")
 
-    # Content Types
+    # Content types with permissions.
     content_types_map = [
-        ("suppliers", "supplier"),
-        ("products", "product"),
-        ("products", "productcategory"),
-        ("invoices", "invoice"),
-        ("invoices", "invoiceitem"),
+        ("suppliers", "supplier", ["add", "view"]),
+        ("products", "product", ["add", "view"]),
+        ("products", "productcategory", ["add", "view"]),
+        ("invoices", "invoice", ["add", "view", "change", "delete"]),
+        ("invoices", "invoiceitem", ["add", "view", "change", "delete"]),
     ]
 
-    content_types = []
-    for app_label, model_name in content_types_map:
+    content_types = {}
+    for app_label, model_name, permissions in content_types_map:
         content_type = ContentType.objects.get_for_model(
             global_apps.get_model(app_label, model_name)
         )
-        content_types.append(content_type)
+        content_types[content_type] = [
+            f"{perm}_{model_name}" for perm in permissions
+        ]
 
     # Add permissions
-    for content_type in content_types:
-        for permission in Permission.objects.filter(content_type=content_type):
+    for content_type, permissions in content_types.items():
+        for permission in Permission.objects.filter(
+            content_type=content_type, codename__in=permissions
+        ):
             group.permissions.add(permission)
 
 

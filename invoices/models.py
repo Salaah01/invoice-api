@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.text import slugify
 from core import number_utils
 from suppliers.models import Supplier
-from products.models import Product
+from products.models import Product, ProductCategory
 
 
 def invoice_upload_path(instance: "Invoice", filename: str) -> str:
@@ -106,6 +106,12 @@ class InvoiceItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     price_ex_vat = models.DecimalField(max_digits=7, decimal_places=2)
+    category = models.ForeignKey(
+        ProductCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     @property
     def unit_price(self) -> float:
