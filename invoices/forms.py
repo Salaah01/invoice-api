@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import QuerySet
 from django.contrib.auth.models import User
 from suppliers import models as supplier_models
 from parser import parse_for_supplier
@@ -6,7 +7,7 @@ from parser.parse_for_supplier import BaseSupplierParser
 from . import models as invoice_models
 
 
-class InvoiceUpload(forms.ModelForm):
+class InvoiceUploadForm(forms.ModelForm):
     """Form captures a newly uploaded invoice along with some information to
     help parse the form.
     """
@@ -66,3 +67,70 @@ class InvoiceUpload(forms.ModelForm):
         except Exception as e:
             print("\033[91mErrors:\n" + str(e) + "\033[0m")
             return None
+
+
+class InvoiceForm(forms.ModelForm):
+    """Form to edit an invoice."""
+
+    class Meta:
+        model = invoice_models.Invoice
+        fields = [
+            "date_ordered",
+            "order_number",
+            "supplier",
+            "subtotal",
+            "vat",
+            "delivery",
+            "promotion",
+            "total",
+            "attachment",
+        ]
+
+
+class InvoiceItemForm(forms.ModelForm):
+    """Form to edit an invoice item."""
+
+    class Meta:
+        model = invoice_models.InvoiceItem
+        fields = [
+            "product",
+            "quantity",
+            "price_ex_vat",
+            "category",
+        ]
+
+
+def invoice_item_formset(
+    invoice_items: QuerySet[invoice_models.InvoiceItem],
+    **kwargs,
+) -> forms.BaseInlineFormSet:
+    """Returns a formset for invoice items.
+
+    :param invoice_items: The invoice items to include in the formset.
+    :type invoice_items: QuerySet[InvoiceItem]
+    :param kwargs: Keyword arguments to pass to the formset.
+    :type kwargs: dict
+    :return: The formset for invoice items.
+    :rtype: forms.BaseInlineFormSet
+    """
+    invoice_items_values = invoice_items.values(
+        "product",
+        "quantity",
+        "price_ex_vat",
+        "category",
+    )
+
+    extra = kwargs.pop("extra", len(invoice_items_values))
+
+    formset = forms.inlineformset_factory(
+        invoice_models.Invoice,
+        invoice_models.InvoiceItem,
+        form=InvoiceItemForm,
+        extra=extra,
+        **kwargs,
+    )()
+
+    for subform, invoice_item in zip(formset.forms, invoice_items_values):
+        subform.initial = invoice_item
+
+    return formset

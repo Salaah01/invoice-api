@@ -29,7 +29,7 @@ class InvoiceUploadFormTest(TestCase):
 
     def test_supplier_choices(self):
         """That that the supplier choices have the correct options."""
-        form = invoice_forms.InvoiceUpload(user=self.user)
+        form = invoice_forms.InvoiceUploadForm(user=self.user)
         self.assertEqual(
             set(form.fields["supplier"].queryset.values_list("id", flat=True)),
             set(
@@ -48,7 +48,7 @@ class InvoiceUploadFormTest(TestCase):
             "test.pdf",
             b"file_content",
         )
-        form = invoice_forms.InvoiceUpload(
+        form = invoice_forms.InvoiceUploadForm(
             user=self.user,
             data={
                 "supplier": self.supplier.id,
@@ -75,7 +75,7 @@ class InvoiceUploadFormTest(TestCase):
             "test.pdf",
             open(invoice_fp, "rb").read(),
         )
-        form = invoice_forms.InvoiceUpload(
+        form = invoice_forms.InvoiceUploadForm(
             user=self.user,
             data={
                 "supplier": self.supplier.id,

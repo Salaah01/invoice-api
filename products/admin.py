@@ -13,3 +13,4 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "default_category", "supplier")
     search_fields = ("id", "name", "default_category__name", "supplier__name")
     list_filter = ("default_category", "supplier")
+    prepopulated_fields = {"slug": ("name",)}

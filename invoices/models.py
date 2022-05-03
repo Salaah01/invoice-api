@@ -123,7 +123,7 @@ class Invoice(models.Model):
             invoice_items.append(
                 self.add_item(
                     product_details.get("quantity"),
-                    product_details.get("price"),
+                    product_details.get("price_ex_vat"),
                     product_name=product_name,
                 )
             )
@@ -178,7 +178,7 @@ class InvoiceItem(models.Model):
     invoice = models.ForeignKey(
         Invoice,
         on_delete=models.CASCADE,
-        related_name="products",
+        related_name="items",
     )
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField(blank=True, null=True)

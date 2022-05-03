@@ -1,20 +1,42 @@
-from django.shortcuts import render, redirect
+from functools import wraps
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.http import Http404
 from django.views import View
 from django.http import HttpRequest, HttpResponse
-from . import forms
+from django.utils.decorators import method_decorator
+from . import forms as invoice_forms, models as invoice_models
+
+
+def with_invoice(func):
+    """Decorator to ensure that the invoice is passed to view."""
+
+    @wraps(func)
+    def wrapper(request, invoice_id, *args, **kwargs):
+
+        invoice = get_object_or_404(invoice_models.Invoice, pk=invoice_id)
+        if request.user.is_authenticated and request.user.has_perm(
+            "view_invoice",
+            invoice,
+        ):
+            return func(request, invoice, *args, **kwargs)
+        raise Http404
+
+    return wrapper
 
 
 class InvoiceUpload(View):
+    """View where users are able to upload invoices."""
+
     def get(self, request: HttpRequest) -> HttpResponse:
         return render(
             request,
             "invoices/upload_new.html",
-            {"form": forms.InvoiceUpload(user=request.user)},
+            {"form": invoice_forms.InvoiceUploadForm(user=request.user)},
         )
 
     def post(self, request: HttpRequest) -> HttpResponse:
-        form = forms.InvoiceUpload(
+        form = invoice_forms.InvoiceUploadForm(
             request.POST,
             request.FILES,
             user=request.user,
@@ -25,3 +47,27 @@ class InvoiceUpload(View):
         else:
             messages.error(request, form.errors)
             return redirect("invoices:upload_new")
+
+
+@method_decorator(with_invoice, name="dispatch")
+class InvoiceEdit(View):
+    """View where users are able to edit the invoice and the invoice items."""
+
+    def get(
+        self,
+        request: HttpRequest,
+        invoice: invoice_models.Invoice,
+    ) -> HttpResponse:
+        invoice_form = invoice_forms.InvoiceForm(instance=invoice)
+        invoice_items_formset = invoice_forms.invoice_item_formset(
+            invoice.items.all()
+        )
+
+        return render(
+            request,
+            "invoices/edit.html",
+            {
+                "invoice_form": invoice_form,
+                "invoice_items_formset": invoice_items_formset,
+            },
+        )
