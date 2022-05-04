@@ -13,14 +13,13 @@ def with_invoice(func):
 
     @wraps(func)
     def wrapper(request, invoice_id, *args, **kwargs):
-
         invoice = get_object_or_404(invoice_models.Invoice, pk=invoice_id)
-        if request.user.is_authenticated and request.user.has_perm(
-            "view_invoice",
-            invoice,
-        ):
+        user = request.user
+        if not user.is_authenticated:
+            raise Http404("You must be logged in to view this page.")
+        if user.has_perm("view_invoice", invoice) or invoice.user == user:
             return func(request, invoice, *args, **kwargs)
-        raise Http404
+        raise Http404("This invoice does not exist or you do not have access.")
 
     return wrapper
 

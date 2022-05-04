@@ -1,6 +1,6 @@
 # Invoice API (In Development)
 
-![coverage: 94%](https://img.shields.io/badge/coverage-94%25-green.svg)
+![coverage: 95%](https://img.shields.io/badge/coverage-95%25-green.svg)
 
 A Django API service for uploading invoices and reading information on uploaded invoices.
 

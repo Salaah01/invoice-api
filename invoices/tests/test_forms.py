@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from model_mommy import mommy
 from suppliers import models as supplier_models
-from .. import forms as invoice_forms
+from .. import forms as invoice_forms, models as invoice_models
 
 
 class InvoiceUploadFormTest(TestCase):
@@ -87,3 +87,22 @@ class InvoiceUploadFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         invoice = form.save()
         self.assertEqual(invoice.supplier, self.supplier)
+
+
+class InvoiceFormTest(TestCase):
+    """Tests for the `invoice_item_formset` function."""
+
+    def test_formset_no_initial(self):
+        """Test that the formset is created without initial data."""
+        formset = invoice_forms.invoice_item_formset(
+            invoice_items=invoice_models.InvoiceItem.objects.none(),
+        )
+        self.assertEqual(len(formset), 0)
+
+    def test_formset_with_initial(self):
+        """Test that the formset is created with initial data."""
+        mommy.make(invoice_models.InvoiceItem)
+        formset = invoice_forms.invoice_item_formset(
+            invoice_items=invoice_models.InvoiceItem.objects.all(),
+        )
+        self.assertEqual(len(formset), 1)
