@@ -2,7 +2,7 @@ import os
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from model_mommy import mommy
+from model_bakery import baker
 from suppliers import models as supplier_models
 from .. import forms as invoice_forms, models as invoice_models
 
@@ -14,14 +14,14 @@ class InvoiceUploadFormTest(TestCase):
     def setUpTestData(cls):
         """Set up test data."""
         super().setUpTestData()
-        cls.user = mommy.make(User)
+        cls.user = baker.make(User)
         for _ in range(10):
-            mommy.make(supplier_models.Supplier)
-        cls.supplier = mommy.make(
+            baker.make(supplier_models.Supplier)
+        cls.supplier = baker.make(
             supplier_models.Supplier,
             name="Soak Rochford",
         )
-        mommy.make(
+        baker.make(
             supplier_models.UserSupplier,
             user=cls.user,
             supplier=cls.supplier,
@@ -101,7 +101,7 @@ class InvoiceFormTest(TestCase):
 
     def test_formset_with_initial(self):
         """Test that the formset is created with initial data."""
-        mommy.make(invoice_models.InvoiceItem)
+        baker.make(invoice_models.InvoiceItem)
         formset = invoice_forms.invoice_item_formset(
             invoice_items=invoice_models.InvoiceItem.objects.all(),
         )

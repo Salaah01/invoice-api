@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from model_mommy import mommy
+from model_bakery import baker
 from core import admin as core_admin
 from invoices import models as invoice_models
 
@@ -11,13 +11,13 @@ class TestPermModelAdmin(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.std_user = mommy.make(User, is_staff=True)
-        cls.superuser = mommy.make(User, is_superuser=True, is_staff=True)
-        cls.invoice_1 = mommy.make(invoice_models.Invoice, user=cls.std_user)
-        cls.invoice_2 = mommy.make(invoice_models.Invoice, user=cls.std_user)
+        cls.std_user = baker.make(User, is_staff=True)
+        cls.superuser = baker.make(User, is_superuser=True, is_staff=True)
+        cls.invoice_1 = baker.make(invoice_models.Invoice, user=cls.std_user)
+        cls.invoice_2 = baker.make(invoice_models.Invoice, user=cls.std_user)
 
         for _ in range(3):
-            mommy.make(invoice_models.Invoice)
+            baker.make(invoice_models.Invoice)
 
     def setUp(self):
         self.client = Client()

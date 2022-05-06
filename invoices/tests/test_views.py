@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.http import HttpRequest
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from model_mommy import mommy
+from model_bakery import baker
 from suppliers import models as supplier_models
 from .. import models as invoice_models
 
@@ -17,12 +17,12 @@ class BaseTestCase(TestCase):
     def setUpTestData(cls):
         """Set up test data."""
         super().setUpTestData()
-        cls.super_user = mommy.make(User, is_superuser=True)
-        cls.supplier = mommy.make(
+        cls.super_user = baker.make(User, is_superuser=True)
+        cls.supplier = baker.make(
             supplier_models.Supplier,
             name="Soak Rochford",
         )
-        mommy.make(
+        baker.make(
             supplier_models.UserSupplier,
             user=cls.super_user,
             supplier=cls.supplier,
@@ -44,7 +44,7 @@ class TestWithInvoice(BaseTestCase):
     def setUp(self):
         """Set up the test."""
         super().setUp()
-        self.invoice = mommy.make(
+        self.invoice = baker.make(
             invoice_models.Invoice,
             supplier=self.supplier,
         )
@@ -65,9 +65,10 @@ class TestWithInvoice(BaseTestCase):
         self.assertEqual(res.status_code, 404)
 
     def test_with_users_invoice(self):
-        """Test that the view is accessible to the user who owns the invoice."""
-        user = mommy.make(User)
-        invoice = mommy.make(
+        """Test that the view is accessible to the user who owns the invoice.
+        """
+        user = baker.make(User)
+        invoice = baker.make(
             invoice_models.Invoice,
             user=user,
         )
@@ -81,7 +82,7 @@ class TestWithInvoice(BaseTestCase):
         """Test that the view is not accessible to a user who does not own the
         invoice.
         """
-        user = mommy.make(User)
+        user = baker.make(User)
         self.client.force_login(user)
         res = self.client.get(
             reverse("invoices:invoice-edit", args=[self.invoice.id])

@@ -1,6 +1,6 @@
 from datetime import date
 from django.test import TestCase
-from model_mommy import mommy
+from model_bakery import baker
 from products import models as product_models
 from .. import models as invoice_models
 
@@ -14,7 +14,7 @@ class TestHelperFunctions(TestCase):
 
     def test_invoice_upload_path(self):
         """Test the `invoice_upload_path` function."""
-        invoice = mommy.make(
+        invoice = baker.make(
             invoice_models.Invoice,
             date_ordered=self.today,
             supplier__slug="test-supplier",
@@ -31,7 +31,7 @@ class TestHelperFunctions(TestCase):
 
     def test_invoice_upload_path_no_order_num(self):
         """Test the `invoice_upload_path` function with no order number."""
-        invoice = mommy.make(
+        invoice = baker.make(
             invoice_models.Invoice,
             date_ordered=self.today,
             supplier__slug="test-supplier",
@@ -53,13 +53,13 @@ class TestInvoice(TestCase):
     def test_str(self):
         """Test the `__str__` method."""
         self.assertIsInstance(
-            str(mommy.make(invoice_models.Invoice)),
+            str(baker.make(invoice_models.Invoice)),
             str,
         )
 
     def test_clean_promotion(self):
         """Test that the `clean` method cleans the promotion value."""
-        invoice = mommy.make(
+        invoice = baker.make(
             invoice_models.Invoice,
             subtotal=100,
             vat=20,
@@ -69,7 +69,7 @@ class TestInvoice(TestCase):
         invoice.clean()
         self.assertEqual(invoice.promotion, -10)
 
-        invoice = mommy.make(
+        invoice = baker.make(
             invoice_models.Invoice,
             subtotal=100,
             vat=20,
@@ -83,8 +83,8 @@ class TestInvoice(TestCase):
         """Test that the `add_item` adds an invoice item correctly when a
         product is provided.
         """
-        product = mommy.make(product_models.Product)
-        invoice = mommy.make(invoice_models.Invoice)
+        product = baker.make(product_models.Product)
+        invoice = baker.make(invoice_models.Invoice)
         invoice_item = invoice.add_item(1, 10, product)
 
         self.assertEqual(invoice_item.product, product)
@@ -95,7 +95,7 @@ class TestInvoice(TestCase):
         """Test that the `add_item` adds an invoice item correctly when a
         product name is provided.
         """
-        invoice = mommy.make(invoice_models.Invoice)
+        invoice = baker.make(invoice_models.Invoice)
         invoice_item = invoice.add_item(1, 10, product_name="Test Product")
 
         self.assertEqual(invoice_item.product.name, "Test Product")
@@ -106,7 +106,7 @@ class TestInvoice(TestCase):
         """Test that the `add_item` raises an error when no product nor
         product_name is provided.
         """
-        invoice = mommy.make(invoice_models.Invoice)
+        invoice = baker.make(invoice_models.Invoice)
         with self.assertRaises(ValueError):
             invoice.add_item(1, 10)
 
@@ -117,13 +117,13 @@ class TestInvoiceItem(TestCase):
     def test_str(self):
         """Test the `__str__` method."""
         self.assertIsInstance(
-            str(mommy.make(invoice_models.InvoiceItem)),
+            str(baker.make(invoice_models.InvoiceItem)),
             str,
         )
 
     def test_unit_price(self):
         """Test the `unit_price` property."""
-        item = mommy.make(
+        item = baker.make(
             invoice_models.InvoiceItem,
             quantity=2,
             price_ex_vat=10,
